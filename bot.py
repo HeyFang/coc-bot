@@ -5,6 +5,7 @@ import time
 import random
 from dotenv import load_dotenv
 import os
+import pytesseract
 
 load_dotenv()
 
@@ -248,7 +249,7 @@ def use_hero_abilities(edge_points):
     for template in ["templates/king_icon.png", 
                      "templates/queen_icon.png",
                      "templates/warden_icon.png"]:
-        result = find_and_tap(template, threshold=0.2)
+        result = find_and_tap(template, threshold=0.5)
         if result:
             print(f"  → ability used")
         else:
@@ -288,7 +289,22 @@ def run_attack():
         return False
     human_sleep(6, 10)  # ← matchmaking wait, varied
 
-    # --- STATE 4: Enemy Base ---
+     # --- STATE 4: Enemy Base — Loot Check ---
+    print("[State 4] Checking loot...")
+    gold, elixir, dark = read_loot()
+
+    # Thresholds — adjust these to your preference
+    GOLD_MIN   = 500_000
+    ELIXIR_MIN = 500_000
+    DARK_MIN   = 5_000
+
+    while gold < GOLD_MIN or elixir < ELIXIR_MIN or dark < DARK_MIN:
+        print(f"  → loot too low (gold:{gold:,} elixir:{elixir:,}), skipping...")
+        find_and_tap("templates/next_btn.png")
+        human_sleep(3, 5)  # wait for next base to load
+        
+    
+    print(f"  → loot good! (gold:{gold:,} elixir:{elixir:,}), attacking...")
     print("[State 4] Normalizing view...")
     normalize_view()
     human_sleep(0.8, 1.5)
@@ -306,24 +322,24 @@ def run_attack():
 
     # Deploy dragons
     print("[State 4] Deploying dragons...")
-    find_and_tap("templates/dragon_icon.png")
+    find_and_tap("templates/switch_icon.png")
     human_sleep(0.4, 0.8)
-    deploy_clustered(edge_points, count=12, repeat=2)
-    human_sleep(0.8, 1.5)
+    deploy_clustered(edge_points, count=50, repeat=1)
+    human_sleep(0.3, 1)
 
-    # Deploy heroes
-    print("[State 4] Deploying heroes...")
-    deploy_hero("templates/king_icon.png", edge_points, repeats=3)
-    human_sleep(0.4, 0.9)
-    deploy_hero("templates/queen_icon.png", edge_points, repeats=3)
-    human_sleep(0.4, 0.9)
-    deploy_hero("templates/warden_icon.png", edge_points, repeats=3)
-    human_sleep(0.5, 1.2)
-
-    # Wait for heroes to enter base then use abilities
-    print("[State 4] Waiting for heroes to enter base...")
-    human_sleep(5, 15)
-    use_hero_abilities(edge_points)
+    # # Deploy heroes
+    # print("[State 4] Deploying heroes...")
+    # deploy_hero("templates/king_icon.png", edge_points, repeats=3)
+    # human_sleep(0.4, 0.9)
+    # deploy_hero("templates/queen_icon.png", edge_points, repeats=3)
+    # human_sleep(0.4, 0.9)
+    # deploy_hero("templates/warden_icon.png", edge_points, repeats=3)
+    # human_sleep(0.5, 1.2)
+    #
+    # # Wait for heroes to enter base then use abilities
+    # print("[State 4] Waiting for heroes to enter base...")
+    # human_sleep(5, 15)
+    # use_hero_abilities(edge_points)
 
     # --- STATE 5: Wait for battle ---
     print("[State 5] Waiting for battle to finish...")
@@ -366,7 +382,68 @@ def idle_behavior():
     elif behavior == "double_pause":
         time.sleep(random.uniform(20, 40))
 
-# --- MAIN LOOP ---
+def read_loot():
+    """
+    Crop the loot region and OCR the gold and elixir values.
+    Returns (gold, elixir) as integers, or (0, 0) if reading fails.
+    """
+    screen = screenshot()
+
+    # Crop each loot value individually
+    # Format: screen[y1:y2, x1:x2]
+    gold_crop    = screen[95:125,  105:230]
+    elixir_crop  = screen[130:160, 105:230]
+    dark_crop    = screen[170:200, 105:230]
+
+    # Upscale for better OCR accuracy — tesseract likes larger text
+    def upscale(img, scale=2):
+        h, w = img.shape[:2]
+        return cv2.resize(img, (w * scale, h * scale), interpolation=cv2.INTER_LINEAR)
+
+    # Convert to grayscale + threshold to make text crisp
+    def preprocess(img):
+        img = upscale(img, scale=3)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # cv2.threshold returns (retval, thresholded_image) — unpack correctly
+        _, thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY)
+        return thresh  # return only the image, not the tuple
+
+    # OCR config — digits only, single line
+    config = "--psm 7 -c tessedit_char_whitelist=0123456789"
+
+    def ocr_number(crop, debug_name=None):
+        processed = preprocess(crop)
+        if debug_name:
+            cv2.imwrite(f"screenshots/ocr_{debug_name}.png", processed)
+        
+        # Convert OpenCV image to PIL for pytesseract
+        from PIL import Image
+        pil_img = Image.fromarray(processed)
+        
+        config = "--oem 3 --psm 7 -c tessedit_char_whitelist=0123456789"
+        text = pytesseract.image_to_string(pil_img, config=config)
+        cleaned = text.strip().replace(" ", "").replace(",", "").replace(".", "")
+        try:
+            return int(cleaned)
+        except ValueError:
+            print(f"  → OCR failed to parse: '{text.strip()}'")
+            return 0
+    gold   = ocr_number(gold_crop,   debug_name="gold")
+    elixir = ocr_number(elixir_crop, debug_name="elixir")
+    dark   = ocr_number(dark_crop,   debug_name="dark")
+
+    print(f"  → Gold:        {gold:,}")
+    print(f"  → Elixir:      {elixir:,}")
+    print(f"  → Dark Elixir: {dark:,}")
+
+    return gold, elixir, dark
+
+# if __name__ == "__main__":
+#     save_screenshot()
+#     crop_template(x=350, y=620, w=70, h=85, filename="switch_icon.png")
+
+
+#--- MAIN LOOP ---
 if __name__ == "__main__":
     attack_count = 0
     max_attacks = random.randint(8, 12)  # vary the session length too
@@ -399,6 +476,8 @@ if __name__ == "__main__":
         idle_behavior()
 
     print(f"\n=== BOT FINISHED === {attack_count} attacks in {elapsed_hours:.1f}h") 
+
+
 
 
 
