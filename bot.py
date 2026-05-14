@@ -348,19 +348,19 @@ def run_attack():
     deploy_clustered(edge_points, count=16, repeat=1)
     human_sleep(0.3, 1)
 
-    # # Deploy heroes
-    # print("[State 4] Deploying heroes...")
-    # deploy_hero("templates/king_icon.png", edge_points, repeats=3)
-    # human_sleep(0.4, 0.9)
-    # deploy_hero("templates/queen_icon.png", edge_points, repeats=3)
-    # human_sleep(0.4, 0.9)
-    # deploy_hero("templates/warden_icon.png", edge_points, repeats=3)
-    # human_sleep(0.5, 1.2)
-    #
-    # # Wait for heroes to enter base then use abilities
-    # print("[State 4] Waiting for heroes to enter base...")
-    # human_sleep(5, 15)
-    # use_hero_abilities(edge_points)
+    # Deploy heroes
+    print("[State 4] Deploying heroes...")
+    deploy_hero("templates/king_icon.png", edge_points, repeats=3)
+    human_sleep(0.4, 0.9)
+    deploy_hero("templates/queen_icon.png", edge_points, repeats=3)
+    human_sleep(0.4, 0.9)
+    deploy_hero("templates/warden_icon.png", edge_points, repeats=3)
+    human_sleep(0.5, 1.2)
+
+    # Wait for heroes to enter base then use abilities
+    print("[State 4] Waiting for heroes to enter base...")
+    human_sleep(5, 15)
+    use_hero_abilities(edge_points)
 
     # --- STATE 5: Wait for battle ---
     print("[State 5] Waiting for battle to finish...")
