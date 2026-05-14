@@ -290,13 +290,34 @@ def run_attack():
     human_sleep(6, 10)  # ← matchmaking wait, varied
 
      # --- STATE 4: Enemy Base — Loot Check ---
-    print("[State 4] Checking loot...")
-    gold, elixir, dark = read_loot()
+    # GOLD_MIN   = 400_000
+    ELIXIR_MIN = 400_000
+    DARK_MIN   = 4_000
+    MAX_SKIPS = 15  # don't skip forever, give up after this many
+    skips = 0
 
-    # Thresholds — adjust these to your preference
-    GOLD_MIN   = 500_000
-    ELIXIR_MIN = 500_000
-    DARK_MIN   = 5_000
+    while skips < MAX_SKIPS:
+        print(f"[State 4] Checking loot (skip #{skips})...")
+        gold, elixir, dark = read_loot()
+
+        if gold >= GOLD_MIN or elixir >= ELIXIR_MIN or dark >= DARK_MIN:
+            print(f"  → loot good! attacking...")
+            break  # exit loop and attack
+
+        print(f"  → loot too low (gold:{gold:,} elixir:{elixir:,} dark:{dark:,}), skipping...")
+        find_and_tap("templates/next_btn.png")
+        human_sleep(4, 7)  # wait for NEW base to fully load before re-reading
+        skips += 1
+    else:
+        # Exhausted all skips without finding good loot
+        print(f"  → gave up after {MAX_SKIPS} skips, ending battle...")
+        find_and_tap("templates/end_battle_btn.png")
+        human_sleep(2, 4)
+        find_and_tap("templates/return_home_btn.png")
+        human_sleep(4, 7)
+        return False
+
+
 
     while gold < GOLD_MIN or elixir < ELIXIR_MIN or dark < DARK_MIN:
         print(f"  → loot too low (gold:{gold:,} elixir:{elixir:,}), skipping...")
@@ -322,9 +343,9 @@ def run_attack():
 
     # Deploy dragons
     print("[State 4] Deploying dragons...")
-    find_and_tap("templates/switch_icon.png")
+    find_and_tap("templates/dragon_icon.png")
     human_sleep(0.4, 0.8)
-    deploy_clustered(edge_points, count=50, repeat=1)
+    deploy_clustered(edge_points, count=16, repeat=1)
     human_sleep(0.3, 1)
 
     # # Deploy heroes
@@ -446,7 +467,7 @@ def read_loot():
 #--- MAIN LOOP ---
 if __name__ == "__main__":
     attack_count = 0
-    max_attacks = random.randint(8, 12)  # vary the session length too
+    max_attacks = random.randint(15, 20)  # vary the session length too
     session_start = time.time()
     max_session_hours = random.uniform(1.5, 3.0)  # bot for 1.5-3hrs then stop
 
