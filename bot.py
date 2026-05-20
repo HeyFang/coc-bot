@@ -290,9 +290,9 @@ def run_attack():
     human_sleep(6, 10)  # ← matchmaking wait, varied
 
      # --- STATE 4: Enemy Base — Loot Check ---
-    # GOLD_MIN   = 400_000
-    ELIXIR_MIN = 400_000
-    DARK_MIN   = 4_000
+    GOLD_MIN   = 800_000
+    ELIXIR_MIN = 800_000
+    DARK_MIN   = 8_000
     MAX_SKIPS = 15  # don't skip forever, give up after this many
     skips = 0
 
@@ -301,7 +301,7 @@ def run_attack():
         gold, elixir, dark = read_loot()
 
         if gold >= GOLD_MIN or elixir >= ELIXIR_MIN or dark >= DARK_MIN:
-            print(f"  → loot good! attacking...")
+            print(f"  → loot good! (gold:{gold:,} elixir:{elixir:,}), attacking...")
             break  # exit loop and attack
 
         print(f"  → loot too low (gold:{gold:,} elixir:{elixir:,} dark:{dark:,}), skipping...")
@@ -316,20 +316,10 @@ def run_attack():
         find_and_tap("templates/return_home_btn.png")
         human_sleep(4, 7)
         return False
-
-
-
-    while gold < GOLD_MIN or elixir < ELIXIR_MIN or dark < DARK_MIN:
-        print(f"  → loot too low (gold:{gold:,} elixir:{elixir:,}), skipping...")
-        find_and_tap("templates/next_btn.png")
-        human_sleep(3, 5)  # wait for next base to load
-        
     
-    print(f"  → loot good! (gold:{gold:,} elixir:{elixir:,}), attacking...")
+    
     print("[State 4] Normalizing view...")
     normalize_view()
-    human_sleep(0.8, 1.5)
-
     print("[State 4] Detecting red zone edge...")
     edge_points = find_red_zone_edge()
     print(f"  → {len(edge_points)} edge points found")
