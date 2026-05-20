@@ -165,8 +165,7 @@ The bot will run a randomized number of attacks (8–12) within a randomized ses
 
 ## TODO
 
-- [ ] **Loot detection** — read gold/elixir values via OCR and skip bases below threshold
-- [ ] **Army training automation** — detect when troops are ready and queue training between sessions
+- [x] **Loot detection** — read gold/elixir values via OCR and skip bases below threshold
 - [ ] **Spell deployment** — auto-cast lightning/earthquake at optimal positions
 - [ ] **Capital raid automation** — extend to handle clan capital raid weekends
 - [ ] **Logging system** — track loot gained, attacks completed, win rate per session
