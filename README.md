@@ -3,8 +3,8 @@
 An open-source Clash of Clans farming bot built with Python and ADB. Automates multiplayer attacks using real-time screen capture and computer vision — no memory hacking, no game file modification.
 
 Built and tested on **Linux (Arch)** with a physical Android device over USB.
-
 I'm currently not workin on this n wont be for a while, if someone is willin to take over or jus wanna contribute thru prs... ill be happy to help out :>
+
 ---
 
 ## How It Works
